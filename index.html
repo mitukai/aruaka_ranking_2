@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex">
+<title>アルアカ全キャラ言えるかな</title>
+<style>
+:root { color-scheme: dark; --bg:#000; --panel:#090909; --line:#3a3a3a; --text:#fff; --muted:#aaa; }
+* { box-sizing:border-box; }
+html { background:var(--bg); }
+body {
+  margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
+}
+header {
+  padding:34px 18px 24px; text-align:center;
+  border-bottom:1px solid var(--line);
+}
+header .sub { color:var(--muted); font-size:12px; letter-spacing:.18em; }
+h1 { margin:9px 0 0; font-size:clamp(28px,5vw,42px); font-weight:700; letter-spacing:.06em; }
+main { width:min(760px,calc(100% - 28px)); margin:25px auto 60px; }
+.stats {
+  display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line);
+  margin-bottom:18px;
+}
+.stat { padding:14px 8px; text-align:center; }
+.stat + .stat { border-left:1px solid var(--line); }
+.stat strong { display:block; font-size:25px; font-weight:650; }
+.stat span { color:var(--muted); font-size:12px; }
+.panel { border:1px solid var(--line); padding:20px; margin-bottom:14px; background:var(--panel); }
+h2 { margin:0 0 14px; font-size:17px; font-weight:650; }
+.description { color:var(--muted); font-size:13px; line-height:1.7; margin:-5px 0 15px; }
+form { margin:0; }
+.entry { display:flex; gap:8px; }
+input, textarea {
+  display:block; width:100%; min-width:0; color:var(--text); background:#000;
+  border:1px solid #666; border-radius:0; padding:13px 12px; font:inherit;
+}
+input::placeholder, textarea::placeholder { color:#858585; }
+button {
+  color:var(--text); background:#111; border:1px solid #777; border-radius:0;
+  padding:11px 15px; font:inherit; font-size:14px; cursor:pointer;
+}
+button:hover { background:#292929; }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline:2px solid #fff; outline-offset:2px;
+}
+.entry button { flex:none; min-width:110px; }
+.message { min-height:24px; margin:12px 0 0; color:#fff; font-size:14px; }
+.message.error { color:#ffb1b1; }
+.message.success { color:#fff; }
+.progress-track { height:4px; margin-top:14px; background:#292929; }
+.progress-bar { height:100%; width:0; background:#fff; transition:width .2s; }
+.row { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:15px; }
+.actions button { flex:1; }
+details { border-top:1px solid var(--line); margin-top:18px; padding-top:14px; }
+summary { cursor:pointer; font-size:14px; }
+textarea { margin-top:12px; min-height:130px; resize:vertical; line-height:1.7; }
+.names { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; margin-top:14px; }
+.name { padding:8px 10px; border:1px solid #333; font-size:13px; overflow-wrap:anywhere; }
+.name.done { border-color:#aaa; }
+.name .status { color:#aaa; margin-right:7px; }
+.hidden { display:none !important; }
+
+.ranking-list { margin:12px 0 0; padding-left:30px; }
+.ranking-list li { padding:9px 8px; border-bottom:1px solid #292929; }
+.ranking-line { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.ranking-name { overflow-wrap:anywhere; }
+.ranking-time { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ranking-empty { color:var(--muted); font-size:13px; }
+#rankingEntry { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+#rankingEntry h3 { margin:0 0 10px; font-size:15px; }
+#rankingSubmitMessage, #rankingStatus { min-height:20px; }
+
+footer { text-align:center; color:#777; font-size:11px; padding:0 15px 25px; }
+@media(max-width:480px) {
+  .stats { grid-template-columns:repeat(2,1fr); }
+  header { padding-top:27px; }
+  .panel { padding:15px; }
+  .entry { flex-direction:column; }
+  .entry button { width:100%; }
+  .actions button { flex-basis:calc(50% - 8px); }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="sub">CHARACTER NAME CHALLENGE</div>
+  <h1>言えるかな？</h1>
+</header>
+<main>
+  <section class="stats" aria-label="回答状況">
+    <div class="stat"><strong id="correct">0</strong><span>正解</span></div>
+    <div class="stat"><strong id="remaining">168</strong><span>残り</span></div>
+    <div class="stat"><strong id="percent">0%</strong><span>達成率</span></div>
+    <div class="stat"><strong id="timer">00:00</strong><span>タイム</span></div>
+  </section>
+<br>
+  <section class="panel">
+    <h2>名前を答える</h2>
+    <p class="description">思い出した名前を入力して「回答する」を押してください。Enterキーでも回答できます。</p>
+    <form class="entry" id="answerForm">
+      <input id="answer" type="text" autocomplete="off" placeholder="キャラクターの名前" aria-label="キャラクターの名前" required>
+      <button type="submit">回答する</button>
+    </form>
+    <p class="message" id="message" role="status" aria-live="polite"></p>
+    <div class="row">
+      <span class="description" style="margin:0" id="count">0 / 168 名</span>
+      <span class="description" style="margin:0">入力した名前はこのページ内で判定します</span>
+    </div>
+    <div class="progress-track"><div class="progress-bar" id="bar"></div></div>
+<br>
+    <div class="actions">
+      <button type="button" id="toggleNames">正解した名前を見る</button>
+      <button type="button" id="giveUp">ギブアップ</button>
+      <button type="button" id="reset">最初からやり直す</button>
+    </div>
+    <div id="solvedNames" class="names hidden"></div>
+    <section id="giveUpResult" class="panel hidden" aria-live="polite" style="margin-top:14px">
+      <h2>回答できなかった名前</h2>
+      <p class="description" id="giveUpSummary"></p>
+      <div id="unsolvedNames" class="names"></div>
+      <div class="actions">
+        <button type="button" id="retry">もう一度やり直す</button>
+      </div>
+    </section>
+  </section>
+
+  <section class="panel" id="rankingPanel">
+    <div class="row">
+      <h2 style="margin:0">オンラインランキング TOP 10</h2>
+      <button type="button" id="refreshRanking">更新</button>
+    </div>
+    <p class="description" id="rankingStatus" style="margin:10px 0 0">ランキングを読み込んでいます。</p>
+    <ol class="ranking-list" id="rankingList" aria-live="polite"></ol>
+
+    <div id="rankingEntry" class="hidden">
+      <h3>クリア記録を登録</h3>
+      <p class="description">全員正解おめでとう！ニックネームを登録すると、ランキングに自己ベストが反映されます。同じニックネームでは速い記録だけが残ります。ニックネームは公開されるため、本名や連絡先などの個人情報は入力しないでください。</p>
+      <form class="entry" id="rankingForm">
+        <input id="nickname" type="text" maxlength="16" autocomplete="off" placeholder="ニックネーム（16文字以内）" aria-label="ランキング用ニックネーム" required>
+        <button type="submit" id="rankingSubmit">記録を登録</button>
+      </form>
+      <p class="message" id="rankingSubmitMessage" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+<footer>全168名／完全一致の重複のみ統合</footer>全168名／完全一致の重複のみ統合</footer>
+<br>
+<script>
+'use strict';
+const names = ["ミシェル・エレーヌ", "エリア・ルヴェル", "フィフィ・ルミネ・セクリー", "アン・エドヴィージュ", "ローラ・ファレスト・ルノワール", "グレイ・ベル", "フォリア・エタニティ", "リチャ・アエダス", "レオ・エレデン", "ナリス・クロラース", "ジュミ・アナルディー", "サリ・ドヴィデ", "ネリン・カミラ", "コリン・カミラ", "ソフィア・セリュジエ", "アリシア・オルガド", "ヴォバリエ・リヴィエール", "ゼノ・クロウ", "シャンス・セラヴィ", "トレゾール・カシェ", "レヨン・ドレ", "シュクル・ローズ", "ジャンティユ・ゲリール", "フォリ・デジール", "シャリテ・エクラ", "ボーテ・クチュール", "コワン・トランキル", "シャトイエ・ヴォレー", "シルヴィー・リシャール", "ノナ・ベル", "マリア・クロード", "ユーリ・ミナレス", "カレン・ディザス", "ピエール・マルタン", "レナ・ライズ", "ミレイユ・アースリー", "ブランカ・メープル", "シエンナ・ガセット", "レミィ・ブラウアー", "ディオン・ノーマン・ヴァルグレイヴ", "セリナ・エルメス・ロズベルク", "ルン・ウィザード", "ミラ・スウェイド", "シウス・クレイ・プリンス", "イザリア・フェスタム", "ルクレチア・イリレーク", "リリア", "セシル", "モニカ", "リヴェラ・シドニア", "エディ・ルヴェル", "ロラン・ファレスト・ルノワール", "ローレル・ファレスト・ルノワール", "ファブリス・エレーヌ", "ミーシャ・エレーヌ", "ゼロ・カオー", "アタック・カオー", "ロリエ・カオー", "アリエル・エレーヌ", "ヴァイン・ゼニスティア", "カイン・サロモン", "オレンデ・ベル", "クロノ・マクロビー", "ティア・ローズ", "フレイヤ・グリフェス", "フォセテ・キドューシュ", "ダリア・ベル", "アーヴェル・ヴァルトシュタイン・メルテット", "ヴァイオレット・ヴァルトシュテルノ・メルテット", "アリオス・ヴァルトシュタイン・メルテット", "アラン・ヴァルトシュタイン・メルテット", "ヴィアンナ・ヴァルトシュテルノ・メルテット", "アルベルト・ヴァルトシュタイン・メルテット", "ヴェルメラ・ヴァルトシュテルノ・メルテット", "フィーネ・ルミネ・セクリー", "アンジュ・エトワール", "リアム・エドヴィージュ", "ゴーチェ・エドヴィージュ", "アネット・エドヴィージュ", "レティシア・ロゼ・カステル", "エラ・シェラン", "ナナ・ステファー", "サクヤ・ルノー", "リーナ・ルフェール", "レアンドラ・ロゼ・カステル", "ローズマリー・クリセット", "ジオラス・ブライズ", "セラフィナ・ルクスウェル", "アズラー・ルクスウェル", "メキラ", "ソロネ", "ラック", "アンラ", "オクト", "ミリアス", "サロメ", "アレイク・サンドレ", "アデレード", "アニュス", "フェルディナンド・アフロディーテ・ハルデル", "ユーカリ・ハマゴリー・アレキサンドロス", "フェネル・ハマゴリー・アレキサンドロス", "モーリス・ハマゴリー・アレキサンドロス", "イグサリア・ハマゴリー・アレキサンドロス", "レジーナ・ロゼ・カステル", "レオカディア・ロゼ・カステル", "シアン・カシス・ローデン", "シノン・カシス・ローデン", "シリル・カシス・ローデン", "セザール・モルト・ベルナール", "セヴェリン・モルト・ベルナール", "オクスタヴィナ・ルミネ・セクリー", "カタリーナ", "マヌーシャ", "マリエット", "セベル", "オーデリー", "チカ", "ジキタリス・ハマゴリー・アレキサンドロス", "シエレア・ロスボウラ・タンザフィオラス", "メレウス・ロスボウラ・タンザフィオラス", "ウィステ・ヴェスナ・タンザフィオラス", "タンナ・ロスボウラ・タンザフィオラス", "アクリラ・ロスボウラ・タンザフィオラス", "ダイアラ・ロスボウラ・タンザフィオラス", "ルヴィラ・ロスボウラ・タンザフィオラス", "サファイラ・ロスボウラ・タンザフィオラス", "マヤ・ニエベ", "ノエル・スノーフリンガ", "ルミ・エヴァン", "サイラ・セカゲーデ", "ライラ・スノードロップ", "ジェード・ヴェスナ・サンソード", "エミリオ・ヘルプスト・ウィンドロック", "クラウス・ロスボウラ・タンザフィオラス", "ルクシア・ロスボウラ・タンザフィオラス", "光琳蓮華", "羽月凰華", "羽月桔梗", "羽月小梢", "羽月桜弥", "秋月　詞", "波久礼", "橘純恋", "ジャン", "フェブ", "マーチ", "エイル", "メイ", "ジュン", "ジュレイ", "オーガスタ", "セプト", "ノーベン", "ディン", "稔", "和月", "リリー・セクリー", "アロルド・ハマゴリー・アレキサンドロス", "エドメ・ハマゴリー・アレキサンドロス", "シェレン・タンザフィオラス", "ヒミコ", "イヨ", "トヨ", "カヨ", "レイ", "シェレン", "ミコ"];
+const solved = new Set();
+const normalize = value => value.normalize('NFKC').replace(/[\s\u3000]+/g, '');
+const lookup = new Map(names.map(name => [normalize(name), name]));
+let startedAt = null;
+let elapsedBeforePause = 0;
+let timerInterval = null;
+let finished = false;
+function formatTime(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  return String(minutes).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+}
+function currentElapsed() {
+  return elapsedBeforePause + (startedAt === null ? 0 : Date.now() - startedAt);
+}
+function startTimer() {
+  if (startedAt !== null || finished) return;
+  startedAt = Date.now();
+  if (timerInterval === null) {
+    timerInterval = window.setInterval(() => {
+      $('timer').textContent = formatTime(currentElapsed());
+    }, 250);
+  }
+}
+function stopTimer() {
+  if (startedAt !== null) {
+    elapsedBeforePause += Date.now() - startedAt;
+    startedAt = null;
+  }
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  $('timer').textContent = formatTime(elapsedBeforePause);
+}
+function resetTimer() {
+  stopTimer();
+  elapsedBeforePause = 0;
+  startedAt = null;
+  finished = false;
+  $('timer').textContent = '00:00';
+}
+
+const $ = id => document.getElementById(id);
+function update() {
+  const total = names.length;
+  const count = solved.size;
+  const percent = Math.round(count / total * 100);
+  $('correct').textContent = count;
+  $('remaining').textContent = total - count;
+  $('percent').textContent = percent + '%';
+  $('count').textContent = `${count} / ${total} 名`;
+  $('bar').style.width = percent + '%';
+  renderSolved();
+}
+function showMessage(text, type='') {
+  const el = $('message');
+  el.textContent = text;
+  el.className = 'message' + (type ? ' ' + type : '');
+}
+function submitOne(raw) {
+  const key = normalize(raw.trim());
+  if (!key) return {status:'empty'};
+  const canonical = lookup.get(key);
+  if (!canonical) return {status:'wrong'};
+  if (solved.has(canonical)) return {status:'duplicate', name:canonical};
+  solved.add(canonical);
+  update();
+  return {status:'correct', name:canonical};
+}
+$('answerForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const input = $('answer');
+  startTimer();
+  const result = submitOne(input.value);
+  if (result.status === 'correct') {
+    showMessage('正解：' + result.name, 'success');
+    input.value = '';
+  } else if (result.status === 'duplicate') {
+    showMessage('「' + result.name + '」はすでに正解しています。');
+  } else if (result.status === 'wrong') {
+    showMessage('登録されていない名前です。表記を確認してください。', 'error');
+  }
+  if (solved.size === names.length && !finished) {
+    finished = true;
+    stopTimer();
+    $('answer').disabled = true;
+    $('giveUp').disabled = true;
+    window.dispatchEvent(new CustomEvent('challenge-completed', {
+      detail: { timeMs: Math.round(elapsedBeforePause), total: names.length }
+    }));
+    showMessage('全員正解！おめでとうございます。タイム：' + formatTime(elapsedBeforePause), 'success');
+  }
+  input.focus();
+});
+function renderSolved() {
+  const root = $('solvedNames');
+  root.replaceChildren();
+  names.filter(name => solved.has(name)).forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'name done';
+    const mark = document.createElement('span');
+    mark.className = 'status';
+    mark.textContent = '✓';
+    div.append(mark, document.createTextNode(name));
+    root.append(div);
+  });
+}
+$('toggleNames').addEventListener('click', () => {
+  const root = $('solvedNames');
+  root.classList.toggle('hidden');
+  $('toggleNames').textContent = root.classList.contains('hidden')
+    ? '正解した名前を見る' : '正解した名前を隠す';
+});
+function showGiveUpResult() {
+  stopTimer();
+  finished = true;
+  $('answer').disabled = true;
+  const remainingNames = names.filter(name => !solved.has(name));
+  $('giveUpSummary').textContent = `正解：${solved.size}名 / 未回答：${remainingNames.length}名`;
+  const root = $('unsolvedNames');
+  root.replaceChildren();
+  remainingNames.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'name';
+    div.textContent = name;
+    root.append(div);
+  });
+  $('giveUpResult').classList.remove('hidden');
+  $('giveUp').disabled = true;
+  showMessage('ギブアップしました。未回答の名前を確認できます。');
+}
+function restartGame() {
+  solved.clear();
+  $('answer').value = '';
+  $('answer').disabled = false;
+  $('giveUpResult').classList.add('hidden');
+  $('unsolvedNames').replaceChildren();
+  $('giveUp').disabled = false;
+  $('solvedNames').classList.add('hidden');
+  $('toggleNames').textContent = '正解した名前を見る';
+  $('rankingEntry').classList.add('hidden');
+  resetTimer();
+  showMessage('もう一度挑戦しましょう。');
+  update();
+  $('answer').focus();
+}
+$('giveUp').addEventListener('click', () => {
+  if (finished) return;
+  if (!window.confirm('ギブアップして未回答の名前を表示しますか？')) return;
+  showGiveUpResult();
+});
+$('retry').addEventListener('click', restartGame);
+$('reset').addEventListener('click', () => {
+  if (!window.confirm('正解状況をリセットしますか？')) return;
+  solved.clear();
+  $('answer').value = '';
+  $('answer').disabled = false;
+  $('giveUp').disabled = false;
+  $('giveUpResult').classList.add('hidden');
+  $('unsolvedNames').replaceChildren();
+  $('solvedNames').classList.add('hidden');
+  $('toggleNames').textContent = '正解した名前を見る';
+  $('rankingEntry').classList.add('hidden');
+  resetTimer();
+  showMessage('リセットしました。');
+  update();
+});
+update();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+  'use strict';
+
+  // Supabase Dashboard の Project URL と Publishable key を設定してください。
+  // Secret key / service_role key は絶対にここへ貼り付けないでください。
+  const SUPABASE_URL = 'https://pvycllaznoilcssademl.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BOEJ-CclkkfHHdez7CidNA_kbLyeS1O';
+  const TABLE_NAME = 'character_ranking';
+
+  const $ = id => document.getElementById(id);
+  const status = $('rankingStatus');
+  const list = $('rankingList');
+  const entry = $('rankingEntry');
+  const submitButton = $('rankingSubmit');
+  let client = null;
+  let pendingTimeMs = null;
+  let sending = false;
+
+  function formatRankTime(ms) {
+    const value = Math.max(0, Number(ms) || 0);
+    const minutes = Math.floor(value / 60000);
+    const seconds = Math.floor((value % 60000) / 1000);
+    const centiseconds = Math.floor((value % 1000) / 10);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+  }
+
+  function showStatus(message, isError = false) {
+    status.textContent = message;
+    status.classList.toggle('error', isError);
+  }
+
+  function renderRows(rows) {
+    list.replaceChildren();
+    if (!rows || rows.length === 0) {
+      const item = document.createElement('li');
+      item.className = 'ranking-empty';
+      item.textContent = 'まだランキング記録がありません。';
+      list.append(item);
+      return;
+    }
+    rows.forEach((row, index) => {
+      const item = document.createElement('li');
+      const line = document.createElement('div');
+      line.className = 'ranking-line';
+      const name = document.createElement('span');
+      name.className = 'ranking-name';
+      name.textContent = row.nickname;
+      const time = document.createElement('strong');
+      time.className = 'ranking-time';
+      time.textContent = formatRankTime(row.time_ms);
+      line.append(name, time);
+      item.append(line);
+      list.append(item);
+    });
+  }
+
+  async function refreshRanking() {
+    if (!client) return;
+    $('refreshRanking').disabled = true;
+    showStatus('ランキングを読み込んでいます。');
+    try {
+      const { data, error } = await client
+        .from(TABLE_NAME)
+        .select('nickname,time_ms,updated_at')
+        .order('time_ms', { ascending: true })
+        .order('updated_at', { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      renderRows(data);
+      showStatus(`上位 ${data.length} 件を表示しています。`);
+    } catch (error) {
+      console.error('ランキング取得エラー:', error);
+      showStatus('ランキングを取得できませんでした。SupabaseのURL・キー・SQL設定を確認してください。', true);
+    } finally {
+      $('refreshRanking').disabled = false;
+    }
+  }
+
+  $('refreshRanking').addEventListener('click', refreshRanking);
+
+  window.addEventListener('challenge-completed', event => {
+    pendingTimeMs = Number(event.detail?.timeMs);
+    entry.classList.remove('hidden');
+    $('rankingSubmitMessage').textContent = '';
+    $('nickname').focus();
+    if (!client) {
+      $('rankingSubmitMessage').textContent = 'Supabase設定がまだ完了していないため、記録は登録できません。';
+    }
+  });
+
+  $('rankingForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!client || sending || !Number.isFinite(pendingTimeMs)) return;
+
+    const nickname = $('nickname').value.trim();
+    const length = Array.from(nickname).length;
+    if (length < 1 || length > 16) {
+      $('rankingSubmitMessage').textContent = 'ニックネームは1〜16文字で入力してください。';
+      return;
+    }
+
+    sending = true;
+    submitButton.disabled = true;
+    $('rankingSubmitMessage').textContent = '記録を登録しています。';
+    try {
+      const { error } = await client.rpc('submit_character_ranking', {
+        p_nickname: nickname,
+        p_time_ms: Math.round(pendingTimeMs)
+      });
+      if (error) throw error;
+      $('rankingSubmitMessage').textContent = '記録を登録しました。同じニックネームでは最速タイムが保存されます。';
+      await refreshRanking();
+    } catch (error) {
+      console.error('ランキング登録エラー:', error);
+      $('rankingSubmitMessage').textContent = '登録できませんでした。SQL設定と通信状態を確認してください。';
+    } finally {
+      sending = false;
+      submitButton.disabled = false;
+    }
+  });
+
+  const configured =
+    SUPABASE_URL.startsWith('https://') &&
+    !SUPABASE_URL.includes('YOUR_PROJECT_ID') &&
+    SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_') &&
+    !SUPABASE_PUBLISHABLE_KEY.includes('YOUR_KEY');
+
+  if (!window.supabase?.createClient) {
+    submitButton.disabled = true;
+    showStatus('ランキング用ライブラリを読み込めませんでした。インターネット接続を確認してください。', true);
+  } else if (!configured) {
+    submitButton.disabled = true;
+    showStatus('SupabaseのProject URLとPublishable keyを設定すると、オンラインランキングが有効になります。');
+    renderRows([]);
+  } else {
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    refreshRanking();
+  }
+})();
+</script>
+
+</body>
+</html>
